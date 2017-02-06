@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e7a000cd2d5164c408a97ac5334dfffe
+timeCreated: 1486227425
+licenseType: Free
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - wallPrefab: {fileID: 114201157997026536, guid: d6230de081e939442ae42e830e8ec0ce,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
