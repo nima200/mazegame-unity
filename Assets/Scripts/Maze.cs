@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.AI;
 
 
 public class Maze : MonoBehaviour {
@@ -11,21 +12,42 @@ public class Maze : MonoBehaviour {
     public MazePassage passagePrefab;
     public MazeWall wallPrefab;
     public List<MazeWall> allWalls = new List<MazeWall>();
-    public List<MazeWall> toDelete = new List<MazeWall>();
-    //public List<MazeWall> innerWalls = new List<MazeWall>();
     public float generationStopDelay;
     public int alcoveCount = 0;
+
+    void setStart()
+    {
+        int randomZIndex = Random.Range(0, size.x - 1);
+        if (!cells[0, randomZIndex].isAlcove)
+        {
+            cells[0, randomZIndex].isStart = true;
+            cells[0, randomZIndex].DestroyWall(cells[0, randomZIndex].edges[3]);
+        } else
+        {
+            setStart();
+        }
+        
+    }
+
+    void setEnd()
+    {
+        int randomZIndex = Random.Range(0, size.x - 1);
+        if (!cells[size.x - 1, randomZIndex].isAlcove)
+        {
+            cells[size.x - 1, randomZIndex].isEnd = true;
+            cells[size.x - 1, randomZIndex].DestroyWall(cells[size.x - 1, randomZIndex].edges[1]);
+        }
+        else
+        {
+            setEnd();
+        }
+    }
 
     public MyVector2D RandomCoordinates {
         get
         {
             return new MyVector2D(Random.Range(0, size.x), Random.Range(0, size.z));
         }
-    }
-
-    public void killDeadEnds()
-    {
-        
     }
 
     public bool ContainsCoordinates (MyVector2D coordinates)
@@ -54,7 +76,25 @@ public class Maze : MonoBehaviour {
         countAlcoves();
         DestroyDeadEnds();
         colorAlcoves();
+        setStart();
+        setEnd();
+        bakeNavMesh();
+    }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.F1))
+        {
+            bakeNavMesh();
+        }
+    }
+
+    void bakeNavMesh()
+    {
+        foreach (MazeCell cell in cells)
+        {
+            cell.nmsurface.Bake();
+        }
     }
 
     void colorAlcoves()
@@ -65,6 +105,18 @@ public class Maze : MonoBehaviour {
             if (cell.wallCount == 3)
             {
                 cell.GetComponentInChildren<Renderer>().material.color = Color.black;
+                cell.isAlcove = true;
+                cell.placeKey();
+                //Destroy(cell.GetComponentInChildren<NavMeshSurface>());
+                //cell.gameObject.AddComponent<NavMeshObstacle>();
+                //cell.gameObject.GetComponent<NavMeshObstacle>().carving = true;
+                //cell.gameObject.GetComponent<NavMeshObstacle>().shape = NavMeshObstacleShape.Box;
+                //cell.gameObject.GetComponent<NavMeshObstacle>().center = new Vector3(0f,0f,0f);
+                //cell.gameObject.GetComponent<NavMeshObstacle>().size = new Vector3(1f, 1f, 1f);
+                //cell.gameObject.GetComponent<NavMeshObstacle>().carvingMoveThreshold = 0.1f;
+                //cell.gameObject.GetComponent<NavMeshObstacle>().carvingTimeToStationary = 0f;
+                //cell.gameObject.GetComponent<NavMeshObstacle>().carveOnlyStationary = false;
+
             }
         }
     }
@@ -82,46 +134,28 @@ public class Maze : MonoBehaviour {
 
     void DestroyDeadEnds()
     {
-        for (int i = 0; i < allWalls.Count; i++)
+        while(allWalls.Count > 0)
         {
-            //if (alcoveCount < 4)
-            //{
-            //    break;
-            //} else
-            //{
-                if (allWalls[i].firstCell == null || allWalls[i].secondCell == null)
+            int randomIndex = Random.Range(0, allWalls.Count - 1);
+            MazeWall wall = allWalls[randomIndex];
+            if (wall.firstCell == null || wall.secondCell == null)
+            {
+                allWalls.Remove(wall);
+                continue;
+            } else
+            {
+                if (wall.firstCell.wallCount == 3 && alcoveCount > 3)
                 {
-                    continue;
+                    wall.firstCell.DestroyWall(wall);
                 }
-                else
+                if (wall.secondCell.wallCount == 3 && alcoveCount > 3)
                 {
-                    MazeWall wall = allWalls[i];
-                    toDelete.Add(wall);
-                    if (allWalls[i].firstCell.wallCount == 3 && alcoveCount > 3)
-                    {
-                        allWalls[i].firstCell.DestroyWall(allWalls[i]);
-                    }
-                    if (allWalls[i].secondCell.wallCount == 3 && alcoveCount > 3/* && (allWalls[i].firstCell != null && allWalls[i].firstCell.wallCount < 3) */)
-                    {
-                        allWalls[i].secondCell.DestroyWall(allWalls[i]);
-                    }
-                    allWalls.Remove(wall);
-                    countAlcoves();
+                    wall.secondCell.DestroyWall(wall);
                 }
+                allWalls.Remove(wall);
+                countAlcoves();
             }
-        //}
-        //deleteExtraAlcoves();
-    }
-    void deleteExtraAlcoves()
-    {
-        for (int i = 0; i < toDelete.Count; i++)
-        {
-            allWalls.Remove(toDelete[i]);
         }
-    }
-    void PlaceAlcoves()
-    {
-
     }
 
     private void DoFirstGenerationStep(List<MazeCell> activeCells)
@@ -195,6 +229,7 @@ public class Maze : MonoBehaviour {
         newCell.transform.parent = transform;
         newCell.transform.localPosition = new Vector3(coordinates.x - size.x * 0.5f + 0.5f, 0f, coordinates.z - size.z * 0.5f + 0.5f);
         newCell.myMaze = this;
+        newCell.nmsurface = newCell.GetComponentInChildren<NavMeshSurface>();
         return newCell;
     }
 }

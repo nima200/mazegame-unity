@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class MazeCell : MonoBehaviour {
     public MyVector2D coordinates;
@@ -8,9 +9,23 @@ public class MazeCell : MonoBehaviour {
     public MazeCellEdge[] edges = new MazeCellEdge[MyDirections.Count];
     public int wallCount = 0;
     public Maze myMaze;
+    public NavMeshSurface nmsurface;
+    public bool isPassable = true;
+    public bool isStart = false;
+    public bool isThreshold = false;
+    public bool isAlcove = false;
+    public bool isEnd = false;
+    public key keyPrefab;
+    public key myKey;
     public MazeCellEdge GetEdge (MazeDirection direction)
     {
         return edges[(int)direction];
+    }
+
+    public void placeKey()
+    {
+        myKey = Instantiate(keyPrefab) as key;
+        myKey.transform.position = this.transform.position + new Vector3(0f, 0.3f, 0f);
     }
 
     public void SetEdge(MazeDirection direction, MazeCellEdge mazeCellEdge)
