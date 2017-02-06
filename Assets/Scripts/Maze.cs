@@ -11,8 +11,10 @@ public class Maze : MonoBehaviour {
     public MazePassage passagePrefab;
     public MazeWall wallPrefab;
     public List<MazeWall> allWalls = new List<MazeWall>();
-    public List<MazeWall> innerWalls = new List<MazeWall>();
+    public List<MazeWall> toDelete = new List<MazeWall>();
+    //public List<MazeWall> innerWalls = new List<MazeWall>();
     public float generationStopDelay;
+    public int alcoveCount = 0;
 
     public MyVector2D RandomCoordinates {
         get
@@ -48,31 +50,75 @@ public class Maze : MonoBehaviour {
             DoNextGenerationStep(activeCells);
         }
         // DELETE ALL DEAD-ENDS
+        
+        countAlcoves();
         DestroyDeadEnds();
+        colorAlcoves();
 
+    }
+
+    void colorAlcoves()
+    {
+
+        foreach(MazeCell cell in cells)
+        {
+            if (cell.wallCount == 3)
+            {
+                cell.GetComponentInChildren<Renderer>().material.color = Color.black;
+            }
+        }
+    }
+
+    void countAlcoves()
+    {
+        alcoveCount = 0;
+        foreach (MazeCell cell in cells)
+        {
+            if (cell.wallCount == 3) {
+                alcoveCount++;
+            }
+        }
     }
 
     void DestroyDeadEnds()
     {
         for (int i = 0; i < allWalls.Count; i++)
         {
-            if (allWalls[i].firstCell == null || allWalls[i].secondCell == null)
-            {
-                continue;
-            } else
-            {
-                if (allWalls[i].firstCell.wallCount == 3)
+            //if (alcoveCount < 4)
+            //{
+            //    break;
+            //} else
+            //{
+                if (allWalls[i].firstCell == null || allWalls[i].secondCell == null)
                 {
-                    allWalls[i].firstCell.DestroyWall(allWalls[i]);
+                    continue;
                 }
-                if (allWalls[i].secondCell.wallCount == 3)
+                else
                 {
-                    allWalls[i].secondCell.DestroyWall(allWalls[i]);
+                    MazeWall wall = allWalls[i];
+                    toDelete.Add(wall);
+                    if (allWalls[i].firstCell.wallCount == 3 && alcoveCount > 3)
+                    {
+                        allWalls[i].firstCell.DestroyWall(allWalls[i]);
+                    }
+                    if (allWalls[i].secondCell.wallCount == 3 && alcoveCount > 3/* && (allWalls[i].firstCell != null && allWalls[i].firstCell.wallCount < 3) */)
+                    {
+                        allWalls[i].secondCell.DestroyWall(allWalls[i]);
+                    }
+                    allWalls.Remove(wall);
+                    countAlcoves();
                 }
             }
+        //}
+        //deleteExtraAlcoves();
+    }
+    void deleteExtraAlcoves()
+    {
+        for (int i = 0; i < toDelete.Count; i++)
+        {
+            allWalls.Remove(toDelete[i]);
         }
     }
-
     void PlaceAlcoves()
     {
 
@@ -132,7 +178,7 @@ public class Maze : MonoBehaviour {
            // wall = Instantiate(wallPrefab) as MazeWall;
            wall.Initialize(secondCell, firstCell, dir.GetOpposite());
            secondCell.wallCount++;
-            innerWalls.Add(wall);
+            //innerWalls.Add(wall);
         } else
         {
             wall.secondCellIndex = -1;
