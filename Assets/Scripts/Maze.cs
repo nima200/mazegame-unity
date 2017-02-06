@@ -91,10 +91,11 @@ public class Maze : MonoBehaviour {
 
     void bakeNavMesh()
     {
-        foreach (MazeCell cell in cells)
-        {
-            cell.nmsurface.Bake();
-        }
+        //foreach (MazeCell cell in cells)
+        //{
+        //    cell.nmsurface.Bake();
+        //}
+        cells[0, 0].nmsurface.Bake();
     }
 
     void colorAlcoves()
